@@ -2,19 +2,6 @@
 <html lang="en">
 <head>
 <script>
-try {
-  // In a sandboxed iframe without allow-same-origin, window.top access throws
-  // If we can access it and it equals self, we're not in an iframe
-  var _top = window.top;
-  if (_top === window.self) {
-    document.documentElement.innerHTML = '';
-    window.location.replace('https://hitbit-code.github.io');
-  }
-} catch(e) {
-  // Access to window.top threw - we're in a sandboxed iframe, good
-}
-</script>
-<script>
 var _lsData={};
 var _ls={
   getItem:function(k){try{var v=window.localStorage.getItem(k);return v;}catch(e){return _lsData.hasOwnProperty(k)?_lsData[k]:null;}},
