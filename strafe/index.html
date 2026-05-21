@@ -5,19 +5,13 @@
 if(window.self===window.top){document.documentElement.innerHTML='';window.location.replace('https://hitbit-code.github.io');}
 </script>
 <script>
-// localStorage shim - must run first before any game code
-(function(){
-  var _m={};
-  try{ localStorage.setItem('__t__','1'); localStorage.removeItem('__t__'); }
-  catch(e){
-    window.localStorage={
-      getItem:function(k){return _m.hasOwnProperty(k)?_m[k]:null;},
-      setItem:function(k,v){_m[k]=String(v);},
-      removeItem:function(k){delete _m[k];},
-      clear:function(){_m={};}
-    };
-  }
-})();
+var _lsData={};
+var _ls={
+  getItem:function(k){try{var v=window.localStorage.getItem(k);return v;}catch(e){return _lsData.hasOwnProperty(k)?_lsData[k]:null;}},
+  setItem:function(k,v){try{window.localStorage.setItem(k,v);}catch(e){_lsData[k]=String(v);}},
+  removeItem:function(k){try{window.localStorage.removeItem(k);}catch(e){delete _lsData[k];}},
+  clear:function(){try{window.localStorage.clear();}catch(e){_lsData={};}}
+};
 </script>
 <style>
 :root{--hb-toolbar-height:0px}
@@ -238,8 +232,8 @@ let totalTimeTracked  = 0;
 let accuracyHistory = [];
 let runStartedAt = 0;
 
-let highScore = Number(localStorage.getItem("hitbit_strafe_hs") || 0);
-let bestAccuracy = Number(localStorage.getItem("hitbit_bestaccuracy") || 0);
+let highScore = Number(_ls.getItem("hitbit_strafe_hs") || 0);
+let bestAccuracy = Number(_ls.getItem("hitbit_bestaccuracy") || 0);
 
 const ball = {
     x: innerWidth/2, y: innerHeight/2,
@@ -441,12 +435,12 @@ function startTimer(){
 
             if(score > highScore){
                 highScore = score;
-                localStorage.setItem("hitbit_strafe_hs", highScore);
+                _ls.setItem("hitbit_strafe_hs", highScore);
             }
 
             if(accuracy > bestAccuracy){
                 bestAccuracy = accuracy;
-                localStorage.setItem("hitbit_bestaccuracy", bestAccuracy);
+                _ls.setItem("hitbit_bestaccuracy", bestAccuracy);
             }
 
             startScreen.style.display="flex";

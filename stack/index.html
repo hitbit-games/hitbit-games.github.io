@@ -5,19 +5,13 @@
 if(window.self===window.top){document.documentElement.innerHTML='';window.location.replace('https://hitbit-code.github.io');}
 </script>
 <script>
-// localStorage shim - must run first before any game code
-(function(){
-  var _m={};
-  try{ localStorage.setItem('__t__','1'); localStorage.removeItem('__t__'); }
-  catch(e){
-    window.localStorage={
-      getItem:function(k){return _m.hasOwnProperty(k)?_m[k]:null;},
-      setItem:function(k,v){_m[k]=String(v);},
-      removeItem:function(k){delete _m[k];},
-      clear:function(){_m={};}
-    };
-  }
-})();
+var _lsData={};
+var _ls={
+  getItem:function(k){try{var v=window.localStorage.getItem(k);return v;}catch(e){return _lsData.hasOwnProperty(k)?_lsData[k]:null;}},
+  setItem:function(k,v){try{window.localStorage.setItem(k,v);}catch(e){_lsData[k]=String(v);}},
+  removeItem:function(k){try{window.localStorage.removeItem(k);}catch(e){delete _lsData[k];}},
+  clear:function(){try{window.localStorage.clear();}catch(e){_lsData={};}}
+};
 </script>
 <style>
 :root{--hb-toolbar-height:0px}
@@ -489,9 +483,9 @@ function endGame() {
   sessionAccuracies.push(currentAcc);
   const avgScore = sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length;
   const avgAcc = sessionAccuracies.length ? (sessionAccuracies.reduce((a, b) => a + b, 0) / sessionAccuracies.length) : 0;
-  let high = localStorage.getItem("hitbitHigh") || 0;
+  let high = _ls.getItem("hitbitHigh") || 0;
   if (score > high) {
-    localStorage.setItem("hitbitHigh", score);
+    _ls.setItem("hitbitHigh", score);
     high = score;
   }
   document.getElementById("endScreen").style.display = "flex";

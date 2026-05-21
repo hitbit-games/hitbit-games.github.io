@@ -5,19 +5,13 @@
 if(window.self===window.top){document.documentElement.innerHTML='';window.location.replace('https://hitbit-code.github.io');}
 </script>
 <script>
-// localStorage shim - must run first before any game code
-(function(){
-  var _m={};
-  try{ localStorage.setItem('__t__','1'); localStorage.removeItem('__t__'); }
-  catch(e){
-    window.localStorage={
-      getItem:function(k){return _m.hasOwnProperty(k)?_m[k]:null;},
-      setItem:function(k,v){_m[k]=String(v);},
-      removeItem:function(k){delete _m[k];},
-      clear:function(){_m={};}
-    };
-  }
-})();
+var _lsData={};
+var _ls={
+  getItem:function(k){try{var v=window.localStorage.getItem(k);return v;}catch(e){return _lsData.hasOwnProperty(k)?_lsData[k]:null;}},
+  setItem:function(k,v){try{window.localStorage.setItem(k,v);}catch(e){_lsData[k]=String(v);}},
+  removeItem:function(k){try{window.localStorage.removeItem(k);}catch(e){delete _lsData[k];}},
+  clear:function(){try{window.localStorage.clear();}catch(e){_lsData={};}}
+};
 </script>
 <style>
 :root{--hb-toolbar-height:0px}
@@ -160,12 +154,12 @@ window.HitBitGlobal={
     let timeoutId = null;
 
     // Load stats
-    let highScore = localStorage.getItem("hitbit_highscore") || null;
-    let reactionHistory = JSON.parse(localStorage.getItem("hitbit_reaction_history") || "[]");
+    let highScore = _ls.getItem("hitbit_highscore") || null;
+    let reactionHistory = JSON.parse(_ls.getItem("hitbit_reaction_history") || "[]");
 
     function saveReaction(time) {
       reactionHistory.push(time);
-      localStorage.setItem("hitbit_reaction_history", JSON.stringify(reactionHistory));
+      _ls.setItem("hitbit_reaction_history", JSON.stringify(reactionHistory));
     }
 
     function getAverage() {
@@ -235,7 +229,7 @@ window.HitBitGlobal={
 
         if (highScore === null || time < highScore) {
           highScore = time;
-          localStorage.setItem("hitbit_highscore", highScore);
+          _ls.setItem("hitbit_highscore", highScore);
         }
       }
 

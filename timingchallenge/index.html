@@ -5,19 +5,13 @@
 if(window.self===window.top){document.documentElement.innerHTML='';window.location.replace('https://hitbit-code.github.io');}
 </script>
 <script>
-// localStorage shim - must run first before any game code
-(function(){
-  var _m={};
-  try{ localStorage.setItem('__t__','1'); localStorage.removeItem('__t__'); }
-  catch(e){
-    window.localStorage={
-      getItem:function(k){return _m.hasOwnProperty(k)?_m[k]:null;},
-      setItem:function(k,v){_m[k]=String(v);},
-      removeItem:function(k){delete _m[k];},
-      clear:function(){_m={};}
-    };
-  }
-})();
+var _lsData={};
+var _ls={
+  getItem:function(k){try{var v=window.localStorage.getItem(k);return v;}catch(e){return _lsData.hasOwnProperty(k)?_lsData[k]:null;}},
+  setItem:function(k,v){try{window.localStorage.setItem(k,v);}catch(e){_lsData[k]=String(v);}},
+  removeItem:function(k){try{window.localStorage.removeItem(k);}catch(e){delete _lsData[k];}},
+  clear:function(){try{window.localStorage.clear();}catch(e){_lsData={};}}
+};
 </script>
 <style>
 :root{--hb-toolbar-height:0px}
@@ -570,23 +564,23 @@ window.HitBitGlobal={
     const accEl = document.getElementById("accuracy");
     const avgScoreEl = document.getElementById("avgScore");
 
-    let storedHigh = parseInt(localStorage.getItem(HIGH_KEY) || "0", 10);
+    let storedHigh = parseInt(_ls.getItem(HIGH_KEY) || "0", 10);
     if (final > storedHigh) {
-      localStorage.setItem(HIGH_KEY, final);
+      _ls.setItem(HIGH_KEY, final);
       storedHigh = final;
     }
 
     let avgPrecision = precisionHits > 0 ? Math.round(totalPrecision / precisionHits) : 0;
 
-    let precisionHistory = JSON.parse(localStorage.getItem(PRECISION_HISTORY_KEY) || "[]");
+    let precisionHistory = JSON.parse(_ls.getItem(PRECISION_HISTORY_KEY) || "[]");
     precisionHistory.push(avgPrecision);
     if (precisionHistory.length > 10) precisionHistory.shift();
-    localStorage.setItem(PRECISION_HISTORY_KEY, JSON.stringify(precisionHistory));
+    _ls.setItem(PRECISION_HISTORY_KEY, JSON.stringify(precisionHistory));
 
-    let scoreHistory = JSON.parse(localStorage.getItem(SCORE_HISTORY_KEY) || "[]");
+    let scoreHistory = JSON.parse(_ls.getItem(SCORE_HISTORY_KEY) || "[]");
     scoreHistory.push(final);
     if (scoreHistory.length > 50) scoreHistory.shift();
-    localStorage.setItem(SCORE_HISTORY_KEY, JSON.stringify(scoreHistory));
+    _ls.setItem(SCORE_HISTORY_KEY, JSON.stringify(scoreHistory));
 
     let avgScore = Math.round(scoreHistory.reduce((a,b)=>a+b,0) / scoreHistory.length);
 
