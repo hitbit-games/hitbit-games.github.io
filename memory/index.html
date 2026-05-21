@@ -12,6 +12,26 @@ var _ls={
   removeItem:function(k){try{window.localStorage.removeItem(k);}catch(e){delete _lsData[k];}},
   clear:function(){try{window.localStorage.clear();}catch(e){_lsData={};}}
 };
+<script>
+var _lsCb={}, _lsCache={};
+function _lsGet(key){
+  return new Promise(function(resolve){
+    if(_lsCache.hasOwnProperty(key)){resolve(_lsCache[key]);return;}
+    var id=key+'_'+Date.now()+'_'+(Math.random()*1e9|0);
+    _lsCb[id]=function(v){_lsCache[key]=v;resolve(v);};
+    window.parent.postMessage({type:'HB_LS_GET',key:key,id:id},'*');
+    setTimeout(function(){if(_lsCb[id]){delete _lsCb[id];resolve(null);}},600);
+  });
+}
+function _lsSet(key,value){
+  _lsCache[key]=value;
+  window.parent.postMessage({type:'HB_LS_SET',key:key,value:value},'*');
+}
+window.addEventListener('message',function(e){
+  if(!e.data||e.data.type!=='HB_LS_RESPONSE')return;
+  var cb=_lsCb[e.data.id];
+  if(cb){delete _lsCb[e.data.id];cb(e.data.value);}
+});
 </script>
 <style>
 :root{--hb-toolbar-height:0px}
@@ -383,7 +403,8 @@ let runStartedAt = 0;
 let runEventLog = "";
 
 // SCORE STORAGE
-let scores = JSON.parse(_ls.getItem("memoryScores") || "[]");
+let scores = []; // loaded async from shell
+_lsGet("memoryScores").then(function(v){scores=JSON.parse(v||"[]");});
 
 // AUDIO
 const audio = new (window.AudioContext || window.webkitAudioContext)();
@@ -546,7 +567,7 @@ function gameOver() {
 
   const last = round;
   scores.push(last);
-  _ls.setItem("memoryScores", JSON.stringify(scores));
+  _lsSet("memoryScores", JSON.stringify(scores));
 
   const high = Math.max(...scores);
   const avg = Math.round(scores.reduce((a,b)=>a+b,0) / scores.length);

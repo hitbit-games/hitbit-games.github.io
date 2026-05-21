@@ -12,6 +12,26 @@ var _ls={
   removeItem:function(k){try{window.localStorage.removeItem(k);}catch(e){delete _lsData[k];}},
   clear:function(){try{window.localStorage.clear();}catch(e){_lsData={};}}
 };
+<script>
+var _lsCb={}, _lsCache={};
+function _lsGet(key){
+  return new Promise(function(resolve){
+    if(_lsCache.hasOwnProperty(key)){resolve(_lsCache[key]);return;}
+    var id=key+'_'+Date.now()+'_'+(Math.random()*1e9|0);
+    _lsCb[id]=function(v){_lsCache[key]=v;resolve(v);};
+    window.parent.postMessage({type:'HB_LS_GET',key:key,id:id},'*');
+    setTimeout(function(){if(_lsCb[id]){delete _lsCb[id];resolve(null);}},600);
+  });
+}
+function _lsSet(key,value){
+  _lsCache[key]=value;
+  window.parent.postMessage({type:'HB_LS_SET',key:key,value:value},'*');
+}
+window.addEventListener('message',function(e){
+  if(!e.data||e.data.type!=='HB_LS_RESPONSE')return;
+  var cb=_lsCb[e.data.id];
+  if(cb){delete _lsCb[e.data.id];cb(e.data.value);}
+});
 </script>
 <style>
 :root{--hb-toolbar-height:0px}
@@ -564,25 +584,27 @@ window.HitBitGlobal={
     const accEl = document.getElementById("accuracy");
     const avgScoreEl = document.getElementById("avgScore");
 
-    let storedHigh = parseInt(_ls.getItem(HIGH_KEY) || "0", 10);
-    if (final > storedHigh) {
-      _ls.setItem(HIGH_KEY, final);
-      storedHigh = final;
-    }
-
     let avgPrecision = precisionHits > 0 ? Math.round(totalPrecision / precisionHits) : 0;
 
-    let precisionHistory = JSON.parse(_ls.getItem(PRECISION_HISTORY_KEY) || "[]");
-    precisionHistory.push(avgPrecision);
-    if (precisionHistory.length > 10) precisionHistory.shift();
-    _ls.setItem(PRECISION_HISTORY_KEY, JSON.stringify(precisionHistory));
+    Promise.all([
+      _lsGet(HIGH_KEY),
+      _lsGet(PRECISION_HISTORY_KEY),
+      _lsGet(SCORE_HISTORY_KEY)
+    ]).then(function(vals){
+      let storedHighDisp=parseInt(vals[0]||"0",10);
+      if(final>storedHigh){_lsSet(HIGH_KEY,final);storedHigh=final;}
+      let precisionHistory=JSON.parse(vals[1]||"[]");
+      precisionHistory.push(avgPrecision);
+      if(precisionHistory.length>10)precisionHistory.shift();
+      _lsSet(PRECISION_HISTORY_KEY,JSON.stringify(precisionHistory));
+      let scoreHistory=JSON.parse(vals[2]||"[]");
+      scoreHistory.push(final);
+      if(scoreHistory.length>50)scoreHistory.shift();
+      _lsSet(SCORE_HISTORY_KEY,JSON.stringify(scoreHistory));
+      let avgScore=Math.round(scoreHistory.reduce((a,b)=>a+b,0)/scoreHistory.length);
+      let storedHighDisp=storedHigh;
 
-    let scoreHistory = JSON.parse(_ls.getItem(SCORE_HISTORY_KEY) || "[]");
-    scoreHistory.push(final);
-    if (scoreHistory.length > 50) scoreHistory.shift();
-    _ls.setItem(SCORE_HISTORY_KEY, JSON.stringify(scoreHistory));
-
-    let avgScore = Math.round(scoreHistory.reduce((a,b)=>a+b,0) / scoreHistory.length);
+    }); // end Promise.all
 
     window.HitBitGlobal?.submitScore({
       game: "timing",

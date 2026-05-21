@@ -12,6 +12,26 @@ var _ls={
   removeItem:function(k){try{window.localStorage.removeItem(k);}catch(e){delete _lsData[k];}},
   clear:function(){try{window.localStorage.clear();}catch(e){_lsData={};}}
 };
+<script>
+var _lsCb={}, _lsCache={};
+function _lsGet(key){
+  return new Promise(function(resolve){
+    if(_lsCache.hasOwnProperty(key)){resolve(_lsCache[key]);return;}
+    var id=key+'_'+Date.now()+'_'+(Math.random()*1e9|0);
+    _lsCb[id]=function(v){_lsCache[key]=v;resolve(v);};
+    window.parent.postMessage({type:'HB_LS_GET',key:key,id:id},'*');
+    setTimeout(function(){if(_lsCb[id]){delete _lsCb[id];resolve(null);}},600);
+  });
+}
+function _lsSet(key,value){
+  _lsCache[key]=value;
+  window.parent.postMessage({type:'HB_LS_SET',key:key,value:value},'*');
+}
+window.addEventListener('message',function(e){
+  if(!e.data||e.data.type!=='HB_LS_RESPONSE')return;
+  var cb=_lsCb[e.data.id];
+  if(cb){delete _lsCb[e.data.id];cb(e.data.value);}
+});
 </script>
 <style>
 :root{--hb-toolbar-height:0px}
@@ -165,8 +185,10 @@ function playSound(type) {
     osc.stop(audioCtx.currentTime + 0.35);
 }
 
-let pastScores = JSON.parse(_ls.getItem("orbFallScores") || "[]").slice(-50);
-let highscore = parseInt(_ls.getItem("orbFallHighscore") || "0");
+let pastScores = []; let highscore = 0; // loaded async
+Promise.all([_lsGet("orbFallScores"),_lsGet("orbFallHighscore")]).then(function(v){
+  pastScores=JSON.parse(v[0]||"[]").slice(-50); highscore=parseInt(v[1]||"0");
+});
 
 let balls = [];
 let score = 0;
@@ -373,11 +395,11 @@ function showGameOver() {
 
     pastScores.push(score);
     if (pastScores.length > 50) pastScores.shift();
-    _ls.setItem("orbFallScores", JSON.stringify(pastScores));
+    _lsSet("orbFallScores", JSON.stringify(pastScores));
 
     if (score > highscore) {
         highscore = score;
-        _ls.setItem("orbFallHighscore", highscore);
+        _lsSet("orbFallHighscore", highscore);
     }
 
     const avgScore = pastScores.length ? Math.round(pastScores.reduce((a,b)=>a+b)/pastScores.length) : 0;
